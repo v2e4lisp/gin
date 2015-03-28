@@ -19,6 +19,7 @@ import (
 
 var (
 	startTime  = time.Now()
+	validExts  = []string{".go", ".tpl", ".tmpl"}
 	logger     = log.New(os.Stdout, "[gin] ", 0)
 	immediate  = false
 	buildError error
@@ -169,7 +170,8 @@ func scanChanges(watchPath string, cb scanCallback) {
 				return nil
 			}
 
-			if filepath.Ext(path) == ".go" && info.ModTime().After(startTime) {
+			ext := filepath.Ext(path)
+			if checkext(ext) && info.ModTime().After(startTime) {
 				cb(path)
 				startTime = time.Now()
 				return errors.New("done")
@@ -179,6 +181,22 @@ func scanChanges(watchPath string, cb scanCallback) {
 		})
 		time.Sleep(500 * time.Millisecond)
 	}
+}
+
+// Check extension(dot is included)
+//
+// default valid extension:
+//
+//   .go
+//   .tpl
+//   .tmpl
+func checkext(ext string) bool {
+	for _, e := range validExts {
+		if e == ext {
+			return true
+		}
+	}
+	return false
 }
 
 func shutdown(runner gin.Runner) {
