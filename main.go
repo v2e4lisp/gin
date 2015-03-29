@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
+	gin "./lib"
 	"github.com/codegangsta/cli"
 	"github.com/codegangsta/envy/lib"
-	"github.com/codegangsta/gin/lib"
 
 	"log"
 	"os"
@@ -93,6 +93,11 @@ func MainAction(c *cli.Context) {
 		logger.Fatal(err)
 	}
 
+	wpf := filepath.Join(wd, gin.WatchPatternFile)
+	if _, err := os.Stat(wpf); err == nil {
+		gin.LoadWatchPatterns(wpf)
+	}
+
 	builder := gin.NewBuilder(c.GlobalString("path"), c.GlobalString("bin"), c.GlobalBool("godep"))
 	runner := gin.NewRunner(filepath.Join(wd, builder.Binary()), c.Args()...)
 	runner.SetWriter(os.Stdout)
@@ -164,12 +169,7 @@ func scanChanges(watchPath string, cb scanCallback) {
 				return filepath.SkipDir
 			}
 
-			// ignore hidden files
-			if filepath.Base(path)[0] == '.' {
-				return nil
-			}
-
-			if filepath.Ext(path) == ".go" && info.ModTime().After(startTime) {
+			if gin.IsWatched(path) && info.ModTime().After(startTime) {
 				cb(path)
 				startTime = time.Now()
 				return errors.New("done")
